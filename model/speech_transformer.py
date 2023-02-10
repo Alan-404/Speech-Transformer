@@ -52,11 +52,13 @@ class SpeechTransformer:
                 m: int = 2,
                 channels: int = 32,
                 kernel_size: int | tuple = 3,
-                stride: int | tuple = 2):
+                stride: int | tuple = 2,
+                checkpoint: str = None):
         self.model = SpeechTransformerModel(vocab_size, n_e, n_d, embedding_dim, length_seq, heads, d_ff, dropout_rate, eps, activation, m, channels, kernel_size, stride)
         self.device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
         self.embedding_dim = embedding_dim
         self.mask_generator = MaskGenerator()
+        self.checkpoint = checkpoint
 
     def build_dataset(self, inputs: torch.Tensor, labels: torch.Tensor, batch_size: int):
         dataset = TensorDataset(inputs, labels)
@@ -77,8 +79,9 @@ class SpeechTransformer:
         torch.save(self.model.state_dict(), path)
 
     def load(self, path: str):
-        self.model.load_state_dict(torch.load(path))
-        self.model.eval()
+        if self.checkpoint is not None:
+            self.model.load_state_dict(torch.load(path))
+            self.model.eval()
 
     def accuracy_function(self, outputs:torch.Tensor, labels: torch.Tensor):
         _, predicted = torch.max(outputs, dim=-1)
@@ -99,12 +102,15 @@ class SpeechTransformer:
 
             for index, data in enumerate(dataloader, 0):
                 inputs, labels = data
+                targets = labels[:, 1:]
+                labels = labels[:, :-1]
                 
                 encoder_padding_mask = None
                 decoder_padding_mask, look_ahead_mask = self.mask_generator.generate_mask(labels)
 
                 inputs = inputs.to(self.device)
                 labels = labels.to(self.device)
+                targets = targets.to(self.device)
                 decoder_padding_mask = decoder_padding_mask.to(self.device)
                 look_ahead_mask = look_ahead_mask.to(self.device)
 
@@ -112,7 +118,7 @@ class SpeechTransformer:
 
                 outputs = self.model(inputs, labels,encoder_padding_mask, decoder_padding_mask, look_ahead_mask, training=True)
                 
-                loss = self.loss_function(outputs, labels)
+                loss = self.loss_function(outputs, targets)
 
                 loss.backward()
                 scheduler.step()
@@ -123,7 +129,24 @@ class SpeechTransformer:
                     print(f"Epoch: {epoch} Batch: {(index+1)} Accuracy: {(running_accuracy*100):.2f}% Loss: {(running_loss/(reset_loss*batch_size)):.3f}")
                     running_loss = 0.0
                     running_accuracy = 0.0
-                
+
+    def predict(self, encoder_in: torch.Tensor, decoder_in: torch.Tensor, max_len: int, end_token: int):
+        self.load(self.checkpoint)
+        for _ in range(max_len):
+            encoder_padding_mask = None
+            decoder_padding_mask, look_ahead_mask = self.mask_generator.generate_mask(decoder_in)
+
+            output = self.model(encoder_in, decoder_in, encoder_padding_mask, look_ahead_mask, decoder_padding_mask, False)
+
+            output = output[:, -1, :]
+
+            _, predicted = torch.max(output)
+
+            if predicted == end_token:
+                break
+
+            result = torch.concat([decoder_in, predicted])
+        return result
 
     
 

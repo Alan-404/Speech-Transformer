@@ -54,7 +54,7 @@ sequences = np.array(df['label'])
 # %%
 sequences
 # %%
-y_train = text_handler.process(sequences, max_length=max_length)
+y_train = text_handler.process(sequences, max_length=max_length+1)
 # %%
 y_train.shape
 # %%

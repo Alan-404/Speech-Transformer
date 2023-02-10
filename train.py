@@ -41,5 +41,7 @@ model.save('./saved_models/speech_transformer.model')
 # %%
 type(y_train)
 # %%
+y_train.shape
+# %%
 
 # %%
