@@ -70,13 +70,13 @@ class MultiHeadAttention(nn.Module):
 
 
 class TwoDimAttention(nn.Module):
-    def __init__(self, channels: int, kernel_size: int | tuple, stride: int | tuple):
+    def __init__(self, channels: int):
         super().__init__()
-        self.conv_q = nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=kernel_size, stride=stride)
-        self.conv_k = nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=kernel_size, stride=stride)
-        self.conv_v = nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=kernel_size, stride=stride)
+        self.conv_q = nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=3, stride=1, padding=1)
+        self.conv_k = nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=3, stride=1, padding=1)
+        self.conv_v = nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=3, stride=1, padding=1)
 
-        self.conv_output = nn.Conv2d(in_channels=2*channels, out_channels=channels, kernel_size=kernel_size, stride=stride)
+        self.conv_output = nn.Conv2d(in_channels=2*channels, out_channels=channels, kernel_size=3, stride=1, padding=1)
 
         self.to(device)
 

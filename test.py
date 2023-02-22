@@ -1,33 +1,26 @@
 #%%
 import torch
-import torch.nn as nn
-import pickle
+from model.utils.net import PreNet
 # %%
-a = torch.rand((5, 12, 512))
+conv1 = torch.nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3, stride=2, padding=1)
+conv2 = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2, padding=1)
+net = PreNet(m=3, channels=32)
 # %%
-device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+a = torch.rand((1, 1, 150, 240))
+# %%
+device = torch.device('cuda')
 # %%
 a = a.to(device)
+covn1 = conv1.to(device)
+conv2 = conv2.to(device)
 # %%
-norm = nn.LayerNorm(normalized_shape=512)
+a = conv1(a)
+a = conv2(a)
+a = net(a)
 # %%
-norm(a)
+a.size()
 # %%
-linear = nn.Linear(in_features=512, out_features=20)
+a = torch.flatten(a, start_dim=1)
 # %%
-b = linear(a)
-# %%
-class Net(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.norm = nn.LayerNorm(normalized_shape=512)
-    def forward(self, x):
-        x = self.norm(x)
-        return x
-# %%
-net = Net()
-# %%
-net = net.to(device)
-# %%
-net(a)
+a.size()
 # %%

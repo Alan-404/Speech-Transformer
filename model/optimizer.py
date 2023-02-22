@@ -1,9 +1,9 @@
-import torch.optim as optim
+import torch
 import numpy as np
 
 
 class ScheduledOptimizer:
-    def __init__(self, optimizer: optim.Optimizer, embedding_dim: int, warmup_steps: int):
+    def __init__(self, optimizer: torch.optim.Optimizer, embedding_dim: int, warmup_steps: int):
         self._optimizer = optimizer
         self.warmup_steps = warmup_steps
         self.current_steps = 0

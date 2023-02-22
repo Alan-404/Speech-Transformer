@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from model.utils.position import PositionEncoding
+from model.utils.position import PositionalEncoding
 from model.utils.layer import DecoderLayer
 from typing import Union, Callable
 import torch.nn.functional as F
@@ -11,26 +11,24 @@ class Decoder(nn.Module):
         self.embedding_dim = embedding_dim
         self.embedding_layer = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embedding_dim)
 
-        self.positional_encoding = PositionEncoding()
+        self.positional_encoding = PositionalEncoding(embedding_dim=embedding_dim)
 
         self.decoder_layers = [DecoderLayer(embedding_dim=embedding_dim, heads=heads, d_ff=d_ff, dropout_rate=dropout_rate, eps=eps, activation=activation) for _ in range(n)]
 
         self.layer_norm = nn.LayerNorm(normalized_shape=embedding_dim)
         self.linear = nn.Linear(in_features=embedding_dim, out_features=vocab_size)
-        self.softmax = nn.Softmax(dim=-1)
+
         self.to(device)
 
     def forward(self,x: torch.Tensor, encoder_output: torch.Tensor, look_ahead_mask: torch.Tensor, padding_mask: torch.Tensor, training: bool):
-        length = x.size(1)
 
         x = self.embedding_layer(x)
 
-        x = x + self.positional_encoding.generate_position(embedding_dim=self.embedding_dim, length=length).to(device)
+        x = self.positional_encoding(x)
         for layer in self.decoder_layers:
             x = layer(x, encoder_output, look_ahead_mask, padding_mask, training)
 
         x = self.layer_norm(x)
         x = self.linear(x)
-        x = self.softmax(x)
 
         return x

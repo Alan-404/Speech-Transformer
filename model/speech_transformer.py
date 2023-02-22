@@ -9,23 +9,27 @@ from model.components.encoder import Encoder
 from model.components.decoder import Decoder
 from model.utils.mask import MaskGenerator
 
+device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+
 class SpeechTransformerModel(nn.Module):
     def __init__(self, vocab_size: int, 
+                sample_rate: int,
+                duration: float,
+                frame_size: int,
+                hop_length: int,
+                length_seq: int, 
                 n_e: int, 
                 n_d: int, 
                 embedding_dim: int, 
-                length_seq: int, 
                 heads: int, 
                 d_ff: int, 
                 dropout_rate: float, 
                 eps: float, 
                 activation: Union[str, Callable[[torch.Tensor], torch.Tensor]],
                 m: int,
-                channels: int,
-                kernel_size: int | tuple,
-                stride: int | tuple):
+                channels: int):
         super().__init__()
-        self.encoder = Encoder(n=n_e, length=length_seq, embedding_dim=embedding_dim, heads=heads, d_ff=d_ff, dropout_rate=dropout_rate, eps=eps, activation=activation, m=m, channels=channels, kernel_size=kernel_size, stride=stride)
+        self.encoder = Encoder(n=n_e, length=length_seq, embedding_dim=embedding_dim, heads=heads, d_ff=d_ff, dropout_rate=dropout_rate, eps=eps, activation=activation, m=m, channels=channels, sample_rate=sample_rate, duration=duration, frame_size=frame_size, hop_length=hop_length)
         self.decoder = Decoder(vocab_size=vocab_size, n=n_d, embedding_dim=embedding_dim, heads=heads, d_ff=d_ff, dropout_rate=dropout_rate, eps=eps, activation=activation)
 
         self.mask_generator = MaskGenerator()
@@ -40,6 +44,10 @@ class SpeechTransformerModel(nn.Module):
 class SpeechTransformer:
     def __init__(self, 
                 vocab_size: int, 
+                sample_rate: int,
+                duration: float,
+                frame_size: int,
+                hop_length: int,
                 length_seq: int, 
                 n_e: int = 12, 
                 n_d: int = 6, 
@@ -51,10 +59,24 @@ class SpeechTransformer:
                 activation: Union[str, Callable[[torch.Tensor], torch.Tensor]] = F.relu,
                 m: int = 2,
                 channels: int = 32,
-                kernel_size: int | tuple = 3,
-                stride: int | tuple = 2,
                 checkpoint: str = None):
-        self.model = SpeechTransformerModel(vocab_size, n_e, n_d, embedding_dim, length_seq, heads, d_ff, dropout_rate, eps, activation, m, channels, kernel_size, stride)
+        self.model = SpeechTransformerModel(
+            vocab_size=vocab_size,
+            sample_rate=sample_rate,
+            duration=duration,
+            frame_size=frame_size, 
+            hop_length=hop_length, length_seq=length_seq,
+            n_e=n_e,
+            n_d=n_d,
+            embedding_dim=embedding_dim,
+            heads=heads,
+            d_ff=d_ff,
+            dropout_rate=dropout_rate,
+            eps=eps,
+            activation=activation,
+            m=m,
+            channels=channels
+        )
         self.device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
         self.embedding_dim = embedding_dim
         self.mask_generator = MaskGenerator()

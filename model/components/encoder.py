@@ -10,14 +10,14 @@ from model.utils.net import PreNet
 device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 
 class Encoder(nn.Module):
-    def __init__(self, n: int, length: int, embedding_dim: int, heads: int, d_ff: int, dropout_rate: float, eps: float, activation: Union[str, Callable[[torch.Tensor], torch.Tensor]], m: int, channels: int, kernel_size: int | tuple, stride: int | tuple):
+    def __init__(self, n: int, length: int, embedding_dim: int, heads: int, d_ff: int, dropout_rate: float, eps: float, activation: Union[str, Callable[[torch.Tensor], torch.Tensor]], m: int, channels: int, sample_rate: int, duration: float, frame_size: int, hop_length: int):
         super().__init__()
-        self.conv_1 = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, stride=2)
-        self.conv_2 = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, stride=2)
+        self.conv_1 = nn.Conv2d(in_channels=1, out_channels=channels, kernel_size=3, stride=2, padding=1)
+        self.conv_2 = nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=3, stride=2, padding=1)
 
-        self.additional_module = PreNet(m=m, channels=channels, kernel_size=kernel_size, stride=stride)
+        self.additional_module = PreNet(m=m, channels=channels)
 
-        self.linear = Linear(embedding_dim=embedding_dim, length=length)
+        self.linear = Linear(embedding_dim=embedding_dim, length=length, sample_rate=sample_rate, duration=duration, frame_size=frame_size, hop_length=hop_length)
 
         self.positional_encoding = PositionEncoding()
 
