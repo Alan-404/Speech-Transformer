@@ -77,10 +77,17 @@ class SpeechTransformer:
             m=m,
             channels=channels
         )
-        self.device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+
+        self.criterion = nn.CrossEntropyLoss()
+
         self.embedding_dim = embedding_dim
         self.mask_generator = MaskGenerator()
         self.checkpoint = checkpoint
+
+        self.epoch = 0
+        self.optimizer = optim.Adam(params=self.model.parameters())
+        self.scheduler = ScheduledOptimizer(optimizer=self.optimizer, embedding_dim=self.embedding_dim, warmup_steps=4000)
+        self.model = self.model.to(device)
 
     def build_dataset(self, inputs: torch.Tensor, labels: torch.Tensor, batch_size: int):
         dataset = TensorDataset(inputs, labels)
@@ -88,22 +95,39 @@ class SpeechTransformer:
         return dataloader
 
     def loss_function(self, outputs: torch.Tensor, labels: torch.Tensor):
-        length = labels.size(1)
-        criterion = nn.CrossEntropyLoss()
-        total_loss = 0.0
-        for item in range(length):
-            loss = criterion(outputs[:, item, :], labels[:, item])
-            total_loss += loss
-        total_loss = torch.mean(total_loss)
-        return total_loss
+        batch_size = labels.size(1)
+        loss = 0.0
+        for index in range(batch_size):
+            loss += self.criterion(outputs[index], labels[index])
+        loss = loss/batch_size
+        return loss
 
-    def save(self, path: str):
-        torch.save(self.model.state_dict(), path)
+    def __save_model(self, path: str):
+        torch.save({
+            'model_state_dict': self.model.state_dict(),
+            'optimizer_state_dict': self.scheduler.state_dict(),
+            'epoch': self.epoch
+        }, path)
 
-    def load(self, path: str):
-        if self.checkpoint is not None:
-            self.model.load_state_dict(torch.load(path))
-            self.model.eval()
+    def save_model(self, path: str = None):
+        if path is None and self.checkpoint is not None:
+            self.__save_model(self.checkpoint)
+        elif path is not None:
+            self.__save_model(path)
+            self.checkpoint = path
+    def __load_model(self, path: str):
+        checkpoint = torch.load(path)
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+        self.scheduler.load_state_dict(checkpoint['optimizer_state_dict'])
+        self.epoch = checkpoint['epoch']
+        self.model.eval()
+        
+    def load(self, path: str = None):
+        if path is None and self.checkpoint is not None:
+            self.__load_model(self.checkpoint)
+        elif path is not None:
+            self.__load_model(path)
+            self.checkpoint = path
 
     def accuracy_function(self, outputs:torch.Tensor, labels: torch.Tensor):
         _, predicted = torch.max(outputs, dim=-1)
@@ -112,13 +136,11 @@ class SpeechTransformer:
         
     
     def fit(self, x_train: torch.Tensor, y_train: torch.Tensor, batch_size: int, epochs: int = 1, reset_loss: int = 1):
-        optimizer = optim.Adam(params=self.model.parameters())
-        scheduler = ScheduledOptimizer(optimizer=optimizer, embedding_dim=self.embedding_dim, warmup_steps=4000)
-        self.model = self.model.to(self.device)
+        
 
         dataloader = self.build_dataset(x_train, y_train, batch_size)
 
-        for epoch in range(epochs):
+        for _ in range(epochs):
             running_loss = 0.0
             running_accuracy = 0.0
 
@@ -130,27 +152,32 @@ class SpeechTransformer:
                 encoder_padding_mask = None
                 decoder_padding_mask, look_ahead_mask = self.mask_generator.generate_mask(labels)
 
-                inputs = inputs.to(self.device)
-                labels = labels.to(self.device)
-                targets = targets.to(self.device)
-                decoder_padding_mask = decoder_padding_mask.to(self.device)
-                look_ahead_mask = look_ahead_mask.to(self.device)
+                inputs = inputs.to(device)
+                labels = labels.to(device)
+                targets = targets.to(device)
+                decoder_padding_mask = decoder_padding_mask.to(device)
+                look_ahead_mask = look_ahead_mask.to(device)
 
-                scheduler.zero_grad()
+                self.scheduler.zero_grad()
 
                 outputs = self.model(inputs, labels,encoder_padding_mask, decoder_padding_mask, look_ahead_mask, training=True)
                 
                 loss = self.loss_function(outputs, targets)
 
                 loss.backward()
-                scheduler.step()
+                self.scheduler.step()
 
                 running_loss += loss.item()
                 running_accuracy += self.accuracy_function(outputs, labels)
-                if index%reset_loss*batch_size == 0:
-                    print(f"Epoch: {epoch} Batch: {(index+1)} Accuracy: {(running_accuracy*100):.2f}% Loss: {(running_loss/(reset_loss*batch_size)):.3f}")
+                if index%reset_loss == 0:
+                    print(f"Epoch: {self.epoch+1} Batch: {(index+1)} Accuracy: {(running_accuracy*100):.2f}% Loss: {(running_loss/(reset_loss)):.3f}")
                     running_loss = 0.0
                     running_accuracy = 0.0
+            
+            self.epoch += 1
+
+        if self.checkpoint is not None:
+            self.save_model(self.checkpoint)
 
     def predict(self, encoder_in: torch.Tensor, decoder_in: torch.Tensor, max_len: int, end_token: int):
         self.load(self.checkpoint)

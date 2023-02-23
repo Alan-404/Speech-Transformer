@@ -5,25 +5,6 @@ from preprocessing.text import TextProcessor
 from typing import Union, Callable
 parser = ArgumentParser()
 
-""" parser = ArgumentParser()
-vocab_size: int, 
-                sample_rate: int,
-                duration: float,
-                frame_size: int,
-                hop_length: int,
-                length_seq: int, 
-                n_e: int = 12, 
-                n_d: int = 6, 
-                embedding_dim: int = 256, 
-                heads: int = 4, 
-                d_ff: int = 2048, 
-                dropout_rate: float = 0.1, 
-                eps: float = 0.1, 
-                activation: Union[str, Callable[[torch.Tensor], torch.Tensor]] = F.relu,
-                m: int = 2,
-                channels: int = 32,
-                checkpoint: str = None """
-
 parser.add_argument('--sample_rate', type=int, default=22050)
 parser.add_argument('--duration', type=float, default=10.0)
 parser.add_argument("--frame_size", type=int, default=550)

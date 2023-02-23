@@ -25,3 +25,8 @@ class ScheduledOptimizer:
     def step(self):
         self._update_learning_rate()
         self._optimizer.step()
+
+    def state_dict(self):
+        return self._optimizer.state_dict()
+    def load_state_dict(self, data):
+        self._optimizer.load_state_dict(data)
