@@ -14,7 +14,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 class SpeechTransformerModel(nn.Module):
     def __init__(self, vocab_size: int, 
                 sample_rate: int,
-                duration: float,
+                duration: int,
                 frame_size: int,
                 hop_length: int,
                 length_seq: int, 
@@ -45,7 +45,7 @@ class SpeechTransformer:
     def __init__(self, 
                 vocab_size: int, 
                 sample_rate: int,
-                duration: float,
+                duration: int,
                 frame_size: int,
                 hop_length: int,
                 length_seq: int, 

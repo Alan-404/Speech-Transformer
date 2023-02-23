@@ -10,7 +10,7 @@ from model.utils.net import PreNet
 device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 
 class Encoder(nn.Module):
-    def __init__(self, n: int, length: int, embedding_dim: int, heads: int, d_ff: int, dropout_rate: float, eps: float, activation: Union[str, Callable[[torch.Tensor], torch.Tensor]], m: int, channels: int, sample_rate: int, duration: float, frame_size: int, hop_length: int):
+    def __init__(self, n: int, length: int, embedding_dim: int, heads: int, d_ff: int, dropout_rate: float, eps: float, activation: Union[str, Callable[[torch.Tensor], torch.Tensor]], m: int, channels: int, sample_rate: int, duration: int, frame_size: int, hop_length: int):
         super().__init__()
         self.conv_1 = nn.Conv2d(in_channels=1, out_channels=channels, kernel_size=3, stride=2, padding=1)
         self.conv_2 = nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=3, stride=2, padding=1)

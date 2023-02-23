@@ -91,7 +91,7 @@ class AudioProcessor:
         self.padder = Padder(mode)
         self.extractor = Extractor(frame_size, hop_length)
         self.normaliser = Normaliser(min, max)
-    def process(self, file_path: str):
+    def __process(self, file_path: str) -> np.ndarray:
         if file_path is None:
             return
         signal = self.loader.load_data(file_path)
@@ -100,3 +100,11 @@ class AudioProcessor:
         signal = self.normaliser.normalise(signal)
         return signal
 
+    def process(self, folder_path: str, list_names: list) -> np.ndarray:
+        data = []
+        for item in list_names:
+            if os.path.exists(f"{folder_path}/{item}.wav"):
+                signal = self.__process(f"{folder_path}/{item}.wav")
+                data.append(signal)
+
+        return np.array(data)
