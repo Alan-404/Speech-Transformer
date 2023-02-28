@@ -8,6 +8,7 @@ from typing import Union, Callable
 from model.components.encoder import Encoder
 from model.components.decoder import Decoder
 from model.utils.mask import MaskGenerator
+import os
 
 device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 
@@ -116,11 +117,14 @@ class SpeechTransformer:
             self.__save_model(path)
             self.checkpoint = path
     def __load_model(self, path: str):
-        checkpoint = torch.load(path)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.scheduler.load_state_dict(checkpoint['optimizer_state_dict'])
-        self.epoch = checkpoint['epoch']
-        self.model.eval()
+        if os.path.exists(path):
+            checkpoint = torch.load(path)
+            self.model.load_state_dict(checkpoint['model_state_dict'])
+            self.scheduler.load_state_dict(checkpoint['optimizer_state_dict'])
+            self.epoch = checkpoint['epoch']
+            self.model.eval()
+        else:
+            return
         
     def load(self, path: str = None):
         if path is None and self.checkpoint is not None:

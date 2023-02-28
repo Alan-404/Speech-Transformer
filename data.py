@@ -9,7 +9,7 @@ import pickle
 
 parser = ArgumentParser()
 
-parser.add_argument('--sample_rate', type=int, default=22050)
+parser.add_argument('--sample_rate', type=int, default=11025)
 parser.add_argument('--duration', type=int, default=10)
 parser.add_argument("--frame_size", type=int, default=550)
 parser.add_argument("--hop_length", type=int, default=220)
