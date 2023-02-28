@@ -7,8 +7,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 class Linear(nn.Module):
     def __init__(self, embedding_dim: int, length: int, sample_rate: int, duration: int, frame_size: int, hop_length: int):
         super().__init__()
-        self.linear_1 = nn.Linear(in_features=int((frame_size//8)), out_features=embedding_dim)
-        self.linear_2 = nn.Linear(in_features=int((((sample_rate*duration)/hop_length))//4), out_features=length)
+        self.linear_1 = nn.Linear(in_features=126, out_features=embedding_dim)
+        self.linear_2 = nn.Linear(in_features=69, out_features=length)
         self.to(device)
 
     def forward(self, x: torch.Tensor):
